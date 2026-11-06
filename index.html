@@ -10,6 +10,8 @@
 #hud{position:fixed;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;gap:10px;pointer-events:none}
 .card{background:#101925c9;border:1px solid #ffffff25;border-radius:13px;padding:9px 13px;backdrop-filter:blur(8px);min-width:100px}
 .label{font-size:10px;letter-spacing:1.2px;color:#aebccc}.value{font-size:20px;font-weight:800}.unit{font-size:11px;color:#bdc9d6}
+#cameraBtn{position:fixed;right:14px;top:290px;z-index:5;min-width:112px;padding:11px 13px;border-radius:14px;background:#101925dd;border:1px solid #ffffff55;color:#f4f7fb;font-size:12px;letter-spacing:.4px;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#cameraBtn:active{background:#34465b}
 #brand{position:fixed;left:16px;bottom:14px;font-size:12px;letter-spacing:2px;color:#e8edf3a8;pointer-events:none}
 #help{position:fixed;right:14px;bottom:14px;background:#101925bd;border:1px solid #ffffff25;border-radius:12px;padding:10px 13px;font-size:11px;line-height:1.55;color:#cbd5e1;pointer-events:none}
 #intro{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(120deg,#07101bdc,#111827bb);padding:20px}
@@ -20,7 +22,7 @@ button{border:0;border-radius:12px;padding:13px 18px;background:#f4b844;color:#1
 #touch{position:fixed;bottom:20px;left:14px;right:14px;display:none;justify-content:space-between;pointer-events:none}
 .pad{display:flex;gap:9px;touch-action:none}.touchbtn{pointer-events:auto;width:58px;height:56px;border-radius:15px;background:#172638c9;border:1px solid #ffffff55;color:white;font-size:21px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none; -webkit-appearance:none;appearance:none}
 .touchbtn.wide{width:68px}.touchbtn:active{background:#40546b}
-@media(max-width:700px){#touch{display:flex}#help{bottom:91px;right:12px;font-size:10px}#brand{bottom:9px}#hud{top:9px;left:9px;right:9px}.card{min-width:0;padding:7px 10px}.value{font-size:17px}}
+@media(max-width:700px){#cameraBtn{top:282px;right:12px;padding:10px 11px;font-size:11px}#touch{display:flex}#help{bottom:91px;right:12px;font-size:10px}#brand{bottom:9px}#hud{top:9px;left:9px;right:9px}.card{min-width:0;padding:7px 10px}.value{font-size:17px}}
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
@@ -29,13 +31,13 @@ button{border:0;border-radius:12px;padding:13px 18px;background:#f4b844;color:#1
 <body>
 <div id="game"></div>
 <div id="hud">
- <div class="card"><div class="label">PROJECT M5</div><div class="value" id="gear">READY</div><div class="unit">OPEN CITY • PROTOTYPE 0.3</div></div>
+ <div class="card"><div class="label">PROJECT M5</div><div class="value" id="gear">READY</div><div class="unit">OPEN CITY • PROTOTYPE 0.4</div></div>
  <div style="display:flex;gap:8px">
   <div class="card"><div class="label">SPEED</div><div><span class="value" id="speed">0</span> <span class="unit">KM/H</span></div></div>
   <div class="card"><div class="label">DISTANCE</div><div><span class="value" id="distance">0.00</span> <span class="unit">KM</span></div></div>
  </div>
 </div>
-<div id="brand">PROJECT M5 — VERSION 0.3</div>
+<button id="cameraBtn" type="button">КАМЕРА: СЗАДИ</button>\n<div id="brand">PROJECT M5 — VERSION 0.4</div>
 <div id="help">W / ↑ — газ<br>S / ↓ — тормоз / назад<br>A D / ← → — поворот<br>Пробел — ручник</div>
 <div id="touch">
  <div class="pad"><button class="touchbtn" data-key="left">◀</button><button class="touchbtn" data-key="right">▶</button></div>
@@ -44,8 +46,8 @@ button{border:0;border-radius:12px;padding:13px 18px;background:#f4b844;color:#1
 <div id="intro"><div class="panel">
  <h1>PROJECT <span>M5</span></h1>
  <div style="color:#e6b653;font-size:11px;letter-spacing:2px;margin-bottom:13px">OPEN CITY • 3D DRIVING</div>
- <p class="muted">Версия 0.3: обновлённый спортивный седан в стиле BMW M5 F90. Исследуй город и проверь обновлённую модель автомобиля.</p>
- <p class="muted"><b>Управление:</b> W / ↑ — газ, S / ↓ — тормоз и задний ход, A / D — поворот, пробел — ручник.</p>
+ <p class="muted">Версия 0.4: улучшенная визуальная модель и переключение камер в стиле BMW M5 F90. Исследуй город и проверь обновлённую модель автомобиля.</p>
+ <p class="muted"><b>Управление:</b> W / ↑ — газ, S / ↓ — тормоз и задний ход, A / D — поворот, пробел — ручник. Кнопка «КАМЕРА» переключает обзор: сзади, капот, спереди и сбоку.</p>
  <button id="start">НАЧАТЬ ПОЕЗДКУ</button>
  <div class="muted" style="font-size:11px;margin-top:10px">Для загрузки 3D-движка нужно подключение к интернету.</div>
 </div></div>
@@ -67,7 +69,8 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.05;
 mount.appendChild(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xc6d9ff,0x39434a,2.0));
+scene.add(new THREE.HemisphereLight(0xd8e6ff,0x46505c,2.5));
+const fillLight=new THREE.DirectionalLight(0xc4d8ff,1.15);fillLight.position.set(35,22,-45);scene.add(fillLight);
 const sun=new THREE.DirectionalLight(0xffe3bd,2.2);
 sun.position.set(-45,80,35);sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);
@@ -125,7 +128,7 @@ for(let axis=0;axis<2;axis++)for(let r=-5;r<=5;r++)for(let t=-5;t<=5;t++){
 // Player car — detailed BMW M5 F90-inspired sedan, procedural geometry.
 // Front of the car points toward local +Z.
 const car=new THREE.Group();scene.add(car);
-const bodyMat=new THREE.MeshStandardMaterial({color:0x10151b,metalness:.88,roughness:.2});
+const bodyMat=new THREE.MeshPhysicalMaterial({color:0x252c36,metalness:.72,roughness:.23,clearcoat:.95,clearcoatRoughness:.16});
 const bodyDark=mat(0x080b10,.28,.72), chrome=mat(0x9aa5b0,.24,.9), tireMat=mat(0x101114,.92,.02);
 const carGlass= new THREE.MeshStandardMaterial({color:0x101d2b,metalness:.5,roughness:.12});
 const lampWhite=new THREE.MeshStandardMaterial({color:0xdcecff,emissive:0x8dbbff,emissiveIntensity:1.25,roughness:.2});
@@ -187,6 +190,18 @@ for(const x of [-.77,.77]){
 for(const x of [-.72,-.48,.48,.72]){
  const tip=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.20,16),chrome);tip.rotation.x=Math.PI/2;tip.position.set(x,.48,-2.52);tip.castShadow=true;car.add(tip);
 }
+// Subtle sculpted wheel-arch lips, making the F90 proportions easier to read.
+for(const side of [-1,1])for(const z of [-1.52,1.52]){
+ const arch=new THREE.Mesh(new THREE.TorusGeometry(.535,.065,10,40,Math.PI),bodyDark);
+ arch.rotation.y=Math.PI/2;
+ arch.position.set(side*1.055,.54,z);
+ arch.castShadow=true;car.add(arch);
+}
+// Small side air outlets behind the front wheels.
+for(const side of [-1,1]){
+ box(car,.035,.24,.42,carbon,side*1.075,.83,1.02);
+ for(let i=0;i<3;i++)box(car,.025,.025,.30,chrome,side*1.098,.78+i*.07,1.02);
+}
 // Wheels: wide performance tyres, multi-spoke alloy rims and brake hardware
 for(const x of [-1.12,1.12])for(const z of [-1.52,1.52]){
  const pivot=new THREE.Group();pivot.position.set(x,.52,z);car.add(pivot);
@@ -229,6 +244,14 @@ addEventListener('blur',()=>{for(const k of ['gas','brake','left','right','handb
 document.getElementById('start').addEventListener('click',()=>{started=true;document.getElementById('intro').style.display='none';});
 const clock=new THREE.Clock();
 const forward=new THREE.Vector3(),desiredCam=new THREE.Vector3(),lookAt=new THREE.Vector3();
+let cameraMode=0;
+const cameraLabels=['КАМЕРА: СЗАДИ','КАМЕРА: КАПОТ','КАМЕРА: СПЕРЕДИ','КАМЕРА: СБОКУ'];
+const cameraBtn=document.getElementById('cameraBtn');
+cameraBtn.addEventListener('click',()=>{
+ cameraMode=(cameraMode+1)%cameraLabels.length;
+ cameraBtn.textContent=cameraLabels[cameraMode];
+});
+
 function animate(){
  requestAnimationFrame(animate);
  const dt=Math.min(clock.getDelta(),.04);
@@ -255,11 +278,26 @@ function animate(){
   distanceEl.textContent=distance.toFixed(2);
   document.getElementById('gear').textContent=speed<-.5?'R':Math.abs(speed)<.5?'N':'D';
  }
- // chase camera, smooth and responsive
- const back=new THREE.Vector3(-Math.sin(car.rotation.y)*10,5.3,-Math.cos(car.rotation.y)*10);
- desiredCam.copy(car.position).add(back);
- camera.position.lerp(desiredCam,1-Math.pow(.001,dt));
- lookAt.copy(car.position);lookAt.y+=1.15;lookAt.addScaledVector(forward,5);
+ // Camera presets: rear chase, bonnet, front showcase and side showcase.
+ const yaw=car.rotation.y;
+ const fwd=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
+ const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
+ let targetPos=new THREE.Vector3(),targetLook=new THREE.Vector3();
+ if(cameraMode===0){
+  targetPos.copy(car.position).addScaledVector(fwd,-10);targetPos.y+=5.2;
+  targetLook.copy(car.position);targetLook.y+=1.05;targetLook.addScaledVector(fwd,5);
+ }else if(cameraMode===1){
+  targetPos.copy(car.position).addScaledVector(fwd,1.15);targetPos.y+=1.75;
+  targetLook.copy(car.position).addScaledVector(fwd,24);targetLook.y+=1.25;
+ }else if(cameraMode===2){
+  targetPos.copy(car.position).addScaledVector(fwd,9.5);targetPos.y+=3.3;
+  targetLook.copy(car.position);targetLook.y+=.95;
+ }else{
+  targetPos.copy(car.position).addScaledVector(right,8.5);targetPos.y+=3.1;
+  targetLook.copy(car.position);targetLook.y+=.9;
+ }
+ camera.position.lerp(targetPos,1-Math.pow(.001,dt));
+ lookAt.copy(targetLook);
  camera.lookAt(lookAt);
  renderer.render(scene,camera);
 }
