@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>PROJECT M5 v0.6.1 — REAL BMW M5 F90</title>
+<title>PROJECT M5 v0.6.2 — MODEL DIAGNOSTICS</title>
 <style>
 :root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101722;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f5f7fa;overscroll-behavior:none;touch-action:none}
 #game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
@@ -31,13 +31,13 @@ button{border:0;border-radius:12px;padding:13px 18px;background:#f4b844;color:#1
 <body>
 <div id="game"></div>
 <div id="hud">
- <div class="card"><div class="label">PROJECT M5</div><div class="value" id="gear">READY</div><div class="unit">OPEN CITY • PROTOTYPE 0.6.1</div></div>
+ <div class="card"><div class="label">PROJECT M5</div><div class="value" id="gear">READY</div><div class="unit">OPEN CITY • PROTOTYPE 0.6.2</div></div>
  <div style="display:flex;gap:8px">
   <div class="card"><div class="label">SPEED</div><div><span class="value" id="speed">0</span> <span class="unit">KM/H</span></div></div>
   <div class="card"><div class="label">DISTANCE</div><div><span class="value" id="distance">0.00</span> <span class="unit">KM</span></div></div>
  </div>
 </div>
-<button id="cameraBtn" type="button">КАМЕРА: СЗАДИ</button>\n<div id="brand">PROJECT M5 — VERSION 0.6.1</div>
+<button id="cameraBtn" type="button">КАМЕРА: СЗАДИ</button>\n<div id="brand">PROJECT M5 — VERSION 0.6.2</div>
 <div id="help">W / ↑ — газ<br>S / ↓ — тормоз / назад<br>A D / ← → — поворот<br>Пробел — ручник</div>
 <div id="touch">
  <div class="pad"><button class="touchbtn" data-key="left">◀</button><button class="touchbtn" data-key="right">▶</button></div>
@@ -46,7 +46,7 @@ button{border:0;border-radius:12px;padding:13px 18px;background:#f4b844;color:#1
 <div id="intro"><div class="panel">
  <h1>PROJECT <span>M5</span></h1>
  <div style="color:#e6b653;font-size:11px;letter-spacing:2px;margin-bottom:13px">OPEN CITY • 3D DRIVING</div>
- <p class="muted">Версия 0.6.1: оригинальная BMW M5 F90 загружается из GitHub Release; сохранены открытый город и четыре режима камеры.</p>
+ <p class="muted">Версия 0.6.2: оригинальная BMW M5 F90 загружается из GitHub Release; сохранены открытый город и четыре режима камеры.</p>
  <p class="muted"><b>Управление:</b> W / ↑ — газ, S / ↓ — тормоз и задний ход, A / D — поворот, пробел — ручник. Кнопка «КАМЕРА» переключает обзор: сзади, капот, спереди и сбоку.</p>
  <button id="start">НАЧАТЬ ПОЕЗДКУ</button>
  <div class="muted" style="font-size:11px;margin-top:10px">Для загрузки 3D-движка и модели требуется подключение к интернету.</div>
@@ -135,6 +135,19 @@ let carModel=null;
 let modelReady=false;
 const loader=new GLTFLoader();
 
+// Diagnostic panel: reports the exact stage that fails on mobile Safari.
+const diag=document.createElement('div');
+diag.id='modelDiagnostic';
+diag.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:min(92vw,520px);max-height:75vh;overflow:auto;background:#111b29f2;color:#f5f7fa;padding:18px;border:1px solid #f4b844;border-radius:16px;font:13px/1.5 system-ui;box-shadow:0 15px 50px #000b;display:none;white-space:pre-wrap;overflow-wrap:anywhere';
+document.body.appendChild(diag);
+function showModelDiagnostic(title,details){
+  diag.style.display='block';
+  diag.innerHTML='';
+  const heading=document.createElement('div');heading.textContent=title;heading.style.cssText='font-size:16px;font-weight:800;color:#f4b844;margin-bottom:8px';diag.appendChild(heading);
+  const body=document.createElement('div');body.textContent=details;diag.appendChild(body);
+  const note=document.createElement('div');note.textContent='Отправь мне этот текст или скриншот. Остальная игра не изменена.';note.style.cssText='margin-top:12px;color:#b8c5d4;font-size:12px';diag.appendChild(note);
+}
+
 function prepareCarModel(gltf){
   carModel=gltf.scene;
   carModel.name='BMW_M5_F90_MODEL';
@@ -190,19 +203,53 @@ function prepareCarModel(gltf){
   console.log('BMW M5 F90 model loaded',size);
 }
 
-loader.load(
-  'https://github.com/Niklemov/PROJECT-M5/releases/download/v0.6/bmw_m5_f90.glb',
-  prepareCarModel,
-  undefined,
-  error=>{
-    console.error('Could not load BMW M5 F90 model:',error);
+const MODEL_URL='https://github.com/Niklemov/PROJECT-M5/releases/download/v0.6/bmw_m5_f90.glb';
+(async()=>{
+  try{
+    document.getElementById('gear').textContent='LOADING';
+    showModelDiagnostic('ЗАГРУЗКА BMW M5 F90','Шаг 1/2: запрашиваю файл модели из GitHub Release…');
+    const response=await fetch(MODEL_URL,{mode:'cors',cache:'no-store'});
+    if(!response.ok){
+      throw new Error('HTTP '+response.status+' '+response.statusText+'\nАдрес: '+MODEL_URL);
+    }
+    const contentType=response.headers.get('content-type')||'не указан';
+    const buffer=await response.arrayBuffer();
+    if(buffer.byteLength<1000){
+      throw new Error('Получен слишком маленький файл: '+buffer.byteLength+' байт. Возможно, GitHub вернул страницу ошибки вместо GLB.\nContent-Type: '+contentType);
+    }
+    const magic=new DataView(buffer).getUint32(0,true);
+    if(magic!==0x46546c67){
+      throw new Error('Ответ получен ('+buffer.byteLength+' байт), но это не GLB-файл.\nПервые байты не содержат сигнатуру glTF. Content-Type: '+contentType);
+    }
+    showModelDiagnostic('ФАЙЛ ПОЛУЧЕН','Шаг 2/2: '+(buffer.byteLength/1024/1024).toFixed(1)+' МБ получено. Разбираю 3D-модель…');
+    loader.parse(buffer,'',gltf=>{
+      try{
+        prepareCarModel(gltf);
+        diag.style.display='none';
+        console.log('BMW M5 F90 model loaded',buffer.byteLength,'bytes');
+      }catch(error){
+        console.error('BMW model preparation failed:',error);
+        document.getElementById('gear').textContent='MODEL ERROR';
+        showModelDiagnostic('ОШИБКА ПОДГОТОВКИ МОДЕЛИ',(error&&error.stack)||String(error));
+      }
+    },error=>{
+      console.error('GLB parse failed:',error);
+      document.getElementById('gear').textContent='MODEL ERROR';
+      showModelDiagnostic('ОШИБКА ЧТЕНИЯ GLB',(error&&error.stack)||String(error));
+    });
+  }catch(error){
+    console.error('BMW M5 F90 download failed:',error);
     document.getElementById('gear').textContent='MODEL ERROR';
-    const warning=document.createElement('div');
-    warning.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:20;background:#351b1b;color:#fff;padding:14px 18px;border:1px solid #ff7777;border-radius:12px;font:13px system-ui;max-width:85%;text-align:center';
-    warning.textContent='Не удалось загрузить BMW M5 F90. Проверь, что файл bmw_m5_f90.glb загружен рядом с index.html.';
-    document.body.appendChild(warning);
+    const details=[
+      'Тип ошибки: '+(error&&error.name||'Error'),
+      'Сообщение: '+(error&&error.message||String(error)),
+      'Проверь подключение к интернету и доступ к GitHub Release.',
+      'Адрес: '+MODEL_URL
+    ].join('\n');
+    showModelDiagnostic('НЕ УДАЛОСЬ ПОЛУЧИТЬ ФАЙЛ МОДЕЛИ',details);
   }
-);
+})();
+
 car.position.set(0,0,0);
 
 // Camera follows behind car. Car's forward direction is local +Z.
