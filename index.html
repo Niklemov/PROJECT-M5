@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>PROJECT M5 — Open City</title>
+<title>PROJECT M5 v0.3 — M5 F90</title>
 <style>
 :root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101722;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f5f7fa;overscroll-behavior:none;touch-action:none}
 #game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
@@ -29,13 +29,13 @@ button{border:0;border-radius:12px;padding:13px 18px;background:#f4b844;color:#1
 <body>
 <div id="game"></div>
 <div id="hud">
- <div class="card"><div class="label">PROJECT M5</div><div class="value" id="gear">READY</div><div class="unit">OPEN CITY • PROTOTYPE 0.1</div></div>
+ <div class="card"><div class="label">PROJECT M5</div><div class="value" id="gear">READY</div><div class="unit">OPEN CITY • PROTOTYPE 0.3</div></div>
  <div style="display:flex;gap:8px">
   <div class="card"><div class="label">SPEED</div><div><span class="value" id="speed">0</span> <span class="unit">KM/H</span></div></div>
   <div class="card"><div class="label">DISTANCE</div><div><span class="value" id="distance">0.00</span> <span class="unit">KM</span></div></div>
  </div>
 </div>
-<div id="brand">PROJECT M5 — EARLY ACCESS</div>
+<div id="brand">PROJECT M5 — VERSION 0.3</div>
 <div id="help">W / ↑ — газ<br>S / ↓ — тормоз / назад<br>A D / ← → — поворот<br>Пробел — ручник</div>
 <div id="touch">
  <div class="pad"><button class="touchbtn" data-key="left">◀</button><button class="touchbtn" data-key="right">▶</button></div>
@@ -44,7 +44,7 @@ button{border:0;border-radius:12px;padding:13px 18px;background:#f4b844;color:#1
 <div id="intro"><div class="panel">
  <h1>PROJECT <span>M5</span></h1>
  <div style="color:#e6b653;font-size:11px;letter-spacing:2px;margin-bottom:13px">OPEN CITY • 3D DRIVING</div>
- <p class="muted">Добро пожаловать в первый прототип. Садись за руль чёрного спортивного седана, исследуй небольшой ночной город и проверь управление.</p>
+ <p class="muted">Версия 0.3: обновлённый спортивный седан в стиле BMW M5 F90. Исследуй город и проверь обновлённую модель автомобиля.</p>
  <p class="muted"><b>Управление:</b> W / ↑ — газ, S / ↓ — тормоз и задний ход, A / D — поворот, пробел — ручник.</p>
  <button id="start">НАЧАТЬ ПОЕЗДКУ</button>
  <div class="muted" style="font-size:11px;margin-top:10px">Для загрузки 3D-движка нужно подключение к интернету.</div>
@@ -122,28 +122,91 @@ for(let axis=0;axis<2;axis++)for(let r=-5;r<=5;r++)for(let t=-5;t<=5;t++){
  const bulb=new THREE.Mesh(new THREE.SphereGeometry(.28,8,8),lampMat);bulb.position.set(x+(axis===0?1.4:0),6.65,z+(axis===1?1.4:0));scene.add(bulb);
 }
 
-// Player car — stylized M5-inspired four-door performance sedan, built from primitives.
+// Player car — detailed BMW M5 F90-inspired sedan, procedural geometry.
+// Front of the car points toward local +Z.
 const car=new THREE.Group();scene.add(car);
-const bodyMat=new THREE.MeshStandardMaterial({color:0x10151b,metalness:.82,roughness:.24});
-const trim=mat(0x090b0e,.35,.7);
+const bodyMat=new THREE.MeshStandardMaterial({color:0x10151b,metalness:.88,roughness:.2});
+const bodyDark=mat(0x080b10,.28,.72), chrome=mat(0x9aa5b0,.24,.9), tireMat=mat(0x101114,.92,.02);
+const carGlass= new THREE.MeshStandardMaterial({color:0x101d2b,metalness:.5,roughness:.12});
+const lampWhite=new THREE.MeshStandardMaterial({color:0xdcecff,emissive:0x8dbbff,emissiveIntensity:1.25,roughness:.2});
+const lampRed=new THREE.MeshStandardMaterial({color:0xb20e20,emissive:0x5b0710,emissiveIntensity:.8});
+const carbon=mat(0x080a0d,.32,.55);
 const wheelMeshes=[];
-function box(parent,w,h,d,material,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
-box(car,2.05,.55,4.55,bodyMat,0,.78,0);
-box(car,1.82,.72,2.45,bodyMat,0,1.34,-.28);
-box(car,1.76,.54,2.24,glass,0,1.39,-.27);
-box(car,1.96,.12,.12,trim,0,.98,2.22);
-box(car,1.9,.12,.12,trim,0,.98,-2.22);
-// front grille and lamps
-box(car,.72,.34,.08,trim,0,.78,2.31);
-for(const x of [-.72,.72]){box(car,.43,.16,.08,mat(0xd9e9ff,.25),x,.91,2.31);box(car,.42,.13,.08,mat(0x9d1d24),x,.65,-2.31);}
-for(const x of [-1.08,1.08])for(const z of [-1.45,1.45]){
+function box(parent,w,h,d,material,x,y,z, bevel=0){
+ let geo=new THREE.BoxGeometry(w,h,d);
+ if(bevel){geo.dispose();geo=new THREE.BoxGeometry(w,h,d);}
+ const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
+}
+// Sculpted lower body, hood, trunk and shoulder line
+box(car,2.12,.52,4.78,bodyMat,0,.72,0);
+box(car,2.16,.24,3.35,bodyMat,0,.98,.12);
+box(car,2.02,.18,1.22,bodyMat,0,.98,1.68);
+box(car,2.00,.18,.88,bodyMat,0,.98,-1.92);
+// Cabin and dark panoramic glass
+box(car,1.78,.68,2.52,bodyMat,0,1.31,-.25);
+box(car,1.68,.48,2.28,carGlass,0,1.39,-.23);
+// Windshield and rear glass as angled panes
+const windshield=box(car,1.66,.055,.92,carGlass,0,1.48,.88);windshield.rotation.x=-.42;
+const rearGlass=box(car,1.62,.05,.78,carGlass,0,1.48,-1.32);rearGlass.rotation.x=.48;
+// Roof panel and subtle roof rails
+box(car,1.62,.10,1.12,bodyMat,0,1.72,-.24);
+// Side window pillars, window dividers, mirrors, door seams and handles
+for(const side of [-1,1]){
+ box(car,.075,.48,.09,bodyMat,side*.86,1.39,.68);
+ box(car,.075,.48,.09,bodyMat,side*.86,1.39,-.42);
+ box(car,.075,.48,.09,bodyMat,side*.86,1.39,-1.13);
+ box(car,.16,.13,.24,bodyMat,side*1.02,1.28,.86);
+ const mirror=box(car,.24,.16,.28,bodyMat,side*1.08,1.48,.82);mirror.rotation.z=side*.12;
+ box(car,.025,.36,2.35,bodyDark,side*1.064,.78,-.12);
+ box(car,.12,.045,.28,chrome,side*1.075,1.05,.28);
+ // side skirts and wheel-arch accent strips
+ box(car,.10,.16,2.85,carbon,side*1.04,.42,-.02);
+}
+// Front bumper, splitter, twin kidney grilles and vertical grille slats
+box(car,2.12,.28,.20,bodyMat,0,.57,2.34);
+box(car,2.18,.075,.34,carbon,0,.39,2.40);
+for(const x of [-.30,.30]){
+ box(car,.43,.48,.10,bodyDark,x,.82,2.405);
+ for(let i=0;i<5;i++)box(car,.035,.40,.035,chrome,x-.14+i*.07,.82,2.47);
+}
+// Headlight housings and LED signatures
+for(const x of [-.77,.77]){
+ const h=box(car,.56,.20,.09,bodyDark,x,.99,2.38);h.rotation.z=(x<0?1:-1)*.06;
+ box(car,.46,.075,.035,lampWhite,x,.99,2.44);
+ box(car,.30,.045,.035,chrome,x,.91,2.445);
+ // lower air intakes
+ box(car,.34,.20,.08,carbon,x,.55,2.40);
+}
+// Rear bumper, diffuser, taillights and four exhaust tips
+box(car,2.12,.28,.20,bodyMat,0,.59,-2.38);
+box(car,1.72,.18,.28,carbon,0,.43,-2.42);
+for(const x of [-.77,.77]){
+ box(car,.54,.19,.08,lampRed,x,.96,-2.43);
+ box(car,.42,.045,.025,lampWhite,x,.99,-2.48);
+}
+for(const x of [-.72,-.48,.48,.72]){
+ const tip=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.20,16),chrome);tip.rotation.x=Math.PI/2;tip.position.set(x,.48,-2.52);tip.castShadow=true;car.add(tip);
+}
+// Wheels: wide performance tyres, multi-spoke alloy rims and brake hardware
+for(const x of [-1.12,1.12])for(const z of [-1.52,1.52]){
  const pivot=new THREE.Group();pivot.position.set(x,.52,z);car.add(pivot);
- const tire=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,.3,20),rubber);tire.rotation.z=Math.PI/2;tire.castShadow=true;pivot.add(tire);
- const rim=new THREE.Mesh(new THREE.CylinderGeometry(.27,.27,.315,16),mat(0x9da8b3,.3,.85));rim.rotation.z=Math.PI/2;pivot.add(rim);
+ const tire=new THREE.Mesh(new THREE.CylinderGeometry(.49,.49,.32,32),tireMat);tire.rotation.z=Math.PI/2;tire.castShadow=true;pivot.add(tire);
+ const rim=new THREE.Mesh(new THREE.CylinderGeometry(.345,.345,.335,32),chrome);rim.rotation.z=Math.PI/2;pivot.add(rim);
+ const hub=new THREE.Mesh(new THREE.CylinderGeometry(.105,.105,.35,20),bodyDark);hub.rotation.z=Math.PI/2;pivot.add(hub);
+ // spokes sit on both visible wheel faces
+ for(const face of [-1,1])for(let i=0;i<10;i++){
+  const a=i*Math.PI/5;
+  const spoke=box(pivot,.045,.29,.065,chrome,face*.18,Math.sin(a)*.17,Math.cos(a)*.17);
+  spoke.rotation.x=-a;
+ }
+ const disc=new THREE.Mesh(new THREE.CylinderGeometry(.29,.29,.025,32),mat(0x555b63,.48,.75));disc.rotation.z=Math.PI/2;disc.position.x=.02;pivot.add(disc);
+ const caliper=box(pivot,.12,.28,.12,mat(0x9d1721,.5,.25),.12,.12,.12);caliper.rotation.x=.25;
  wheelMeshes.push({pivot,front:z>0});
 }
-// small rear wing
-box(car,1.45,.09,.28,trim,0,1.32,-2.13);
+// Rear lip spoiler, front splitter details and subtle badges
+box(car,1.42,.075,.22,carbon,0,1.36,-2.18);
+box(car,.34,.055,.035,chrome,0,.78,-2.49);
+box(car,1.55,.045,.10,chrome,0,.40,2.52);
 car.position.set(0,0,0);
 
 // Camera follows behind car. Car's forward direction is local +Z.
