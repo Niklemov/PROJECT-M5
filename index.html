@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>PROJECT M5 v0.6.4 — MODEL DIAGNOSTICS</title>
+<title>PROJECT M5 v0.6.5 — BMW MODEL FIX</title>
 <style>
 :root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101722;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f5f7fa;overscroll-behavior:none;touch-action:none}
 #game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
@@ -31,13 +31,13 @@ button{border:0;border-radius:12px;padding:13px 18px;background:#f4b844;color:#1
 <body>
 <div id="game"></div>
 <div id="hud">
- <div class="card"><div class="label">PROJECT M5</div><div class="value" id="gear">READY</div><div class="unit">OPEN CITY • PROTOTYPE 0.6.2</div></div>
+ <div class="card"><div class="label">PROJECT M5</div><div class="value" id="gear">READY</div><div class="unit">OPEN CITY • PROTOTYPE 0.6.5</div></div>
  <div style="display:flex;gap:8px">
   <div class="card"><div class="label">SPEED</div><div><span class="value" id="speed">0</span> <span class="unit">KM/H</span></div></div>
   <div class="card"><div class="label">DISTANCE</div><div><span class="value" id="distance">0.00</span> <span class="unit">KM</span></div></div>
  </div>
 </div>
-<button id="cameraBtn" type="button">КАМЕРА: СЗАДИ</button>\n<div id="brand">PROJECT M5 — VERSION 0.6.2</div>
+<button id="cameraBtn" type="button">КАМЕРА: СЗАДИ</button>\n<div id="brand">PROJECT M5 — VERSION 0.6.5</div>
 <div id="help">W / ↑ — газ<br>S / ↓ — тормоз / назад<br>A D / ← → — поворот<br>Пробел — ручник</div>
 <div id="touch">
  <div class="pad"><button class="touchbtn" data-key="left">◀</button><button class="touchbtn" data-key="right">▶</button></div>
@@ -46,7 +46,7 @@ button{border:0;border-radius:12px;padding:13px 18px;background:#f4b844;color:#1
 <div id="intro"><div class="panel">
  <h1>PROJECT <span>M5</span></h1>
  <div style="color:#e6b653;font-size:11px;letter-spacing:2px;margin-bottom:13px">OPEN CITY • 3D DRIVING</div>
- <p class="muted">Версия 0.6.2: оригинальная BMW M5 F90 загружается из GitHub Release; сохранены открытый город и четыре режима камеры.</p>
+ <p class="muted">Версия 0.6.5: оригинальная BMW M5 F90 с исправленным направлением и увеличенным размером; сохранены открытый город и четыре режима камеры.</p>
  <p class="muted"><b>Управление:</b> W / ↑ — газ, S / ↓ — тормоз и задний ход, A / D — поворот, пробел — ручник. Кнопка «КАМЕРА» переключает обзор: сзади, капот, спереди и сбоку.</p>
  <button id="start">НАЧАТЬ ПОЕЗДКУ</button>
  <div class="muted" style="font-size:11px;margin-top:10px">Для загрузки 3D-движка и модели требуется подключение к интернету.</div>
@@ -135,17 +135,10 @@ let carModel=null;
 let modelReady=false;
 const loader=new GLTFLoader();
 
-// Diagnostic panel: reports the exact stage that fails on mobile Safari.
-const diag=document.createElement('div');
-diag.id='modelDiagnostic';
-diag.style.cssText='position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:min(92vw,520px);max-height:75vh;overflow:auto;background:#111b29f2;color:#f5f7fa;padding:18px;border:1px solid #f4b844;border-radius:16px;font:13px/1.5 system-ui;box-shadow:0 15px 50px #000b;display:none;white-space:pre-wrap;overflow-wrap:anywhere';
-document.body.appendChild(diag);
-function showModelDiagnostic(title,details){
-  diag.style.display='block';
-  diag.innerHTML='';
-  const heading=document.createElement('div');heading.textContent=title;heading.style.cssText='font-size:16px;font-weight:800;color:#f4b844;margin-bottom:8px';diag.appendChild(heading);
-  const body=document.createElement('div');body.textContent=details;diag.appendChild(body);
-  const note=document.createElement('div');note.textContent='Отправь мне этот текст или скриншот. Остальная игра не изменена.';note.style.cssText='margin-top:12px;color:#b8c5d4;font-size:12px';diag.appendChild(note);
+// No diagnostic popup: model loading happens quietly in the background.
+function modelLoadFailed(error){
+  console.error('BMW M5 F90 model error:',error);
+  document.getElementById('gear').textContent='MODEL ERROR';
 }
 
 function prepareCarModel(gltf){
@@ -167,8 +160,8 @@ function prepareCarModel(gltf){
     }
   });
 
-  // The vehicle in this GLB is modelled along its local Z axis.
-  // Center it horizontally and place its lowest point on the road.
+  // The source GLB is laid out along X: its front is +X and rear is -X.
+  // Rotate it so the front points along the game forward axis (+Z).
   carModel.updateMatrixWorld(true);
   const bounds=new THREE.Box3().setFromObject(carModel);
   const size=bounds.getSize(new THREE.Vector3());
@@ -176,7 +169,7 @@ function prepareCarModel(gltf){
 
   // Normalize to a realistic game-world length without changing proportions.
   const length=Math.max(size.z,size.x);
-  const scale=4.85/length;
+  const scale=6.0/length;
   carModel.scale.setScalar(scale);
   carModel.updateMatrixWorld(true);
 
@@ -188,7 +181,7 @@ function prepareCarModel(gltf){
 
   // If the model's long axis was exported along X, rotate it to the game's +Z forward axis.
   if(size.x>size.z){
-    carModel.rotation.y=Math.PI/2;
+    carModel.rotation.y=-Math.PI/2;
     carModel.updateMatrixWorld(true);
     const rotatedBounds=new THREE.Box3().setFromObject(carModel);
     const rotatedCenter=rotatedBounds.getCenter(new THREE.Vector3());
@@ -207,7 +200,6 @@ const MODEL_PARTS=['./bmw_m5_f90.part1','./bmw_m5_f90.part2'];
 (async()=>{
   try{
     document.getElementById('gear').textContent='LOADING';
-    showModelDiagnostic('ЗАГРУЗКА BMW M5 F90','Загружаю две части модели с GitHub Pages…');
     const responses=await Promise.all(MODEL_PARTS.map(url=>fetch(url,{cache:'no-store'})));
     for(let i=0;i<responses.length;i++){
       if(!responses[i].ok) throw new Error('Часть '+(i+1)+': HTTP '+responses[i].status+' '+responses[i].statusText+'\nАдрес: '+MODEL_PARTS[i]);
@@ -221,30 +213,21 @@ const MODEL_PARTS=['./bmw_m5_f90.part1','./bmw_m5_f90.part2'];
     const glb=buffer.buffer;
     const magic=new DataView(glb).getUint32(0,true);
     if(magic!==0x46546c67) throw new Error('Собранный файл не является GLB: неверная сигнатура.');
-    showModelDiagnostic('ФАЙЛ СОБРАН','Получено '+(total/1024/1024).toFixed(1)+' МБ из двух частей. Разбираю 3D-модель…');
     loader.parse(glb,'',gltf=>{
       try{
         prepareCarModel(gltf);
-        diag.style.display='none';
         console.log('BMW M5 F90 model loaded',total,'bytes');
       }catch(error){
         console.error('BMW model preparation failed:',error);
-        document.getElementById('gear').textContent='MODEL ERROR';
-        showModelDiagnostic('ОШИБКА ПОДГОТОВКИ МОДЕЛИ',(error&&error.stack)||String(error));
+        modelLoadFailed(error);
       }
     },error=>{
       console.error('GLB parse failed:',error);
-      document.getElementById('gear').textContent='MODEL ERROR';
-      showModelDiagnostic('ОШИБКА ЧТЕНИЯ GLB',(error&&error.stack)||String(error));
+      modelLoadFailed(error);
     });
   }catch(error){
     console.error('BMW M5 F90 download failed:',error);
-    document.getElementById('gear').textContent='MODEL ERROR';
-    showModelDiagnostic('НЕ УДАЛОСЬ ЗАГРУЗИТЬ ЧАСТИ МОДЕЛИ',[
-      'Тип ошибки: '+(error&&error.name||'Error'),
-      'Сообщение: '+(error&&error.message||String(error)),
-      'Убедись, что оба файла bmw_m5_f90.part1 и bmw_m5_f90.part2 находятся рядом с index.html.'
-    ].join('\n'));
+    modelLoadFailed(error);
   }
 })();
 
