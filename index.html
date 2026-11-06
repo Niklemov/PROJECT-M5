@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>PROJECT M5 — Open City</title>
 <style>
-:root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101722;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f5f7fa}
+:root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101722;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f5f7fa;overscroll-behavior:none;touch-action:none}
 #game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
 #hud{position:fixed;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;gap:10px;pointer-events:none}
 .card{background:#101925c9;border:1px solid #ffffff25;border-radius:13px;padding:9px 13px;backdrop-filter:blur(8px);min-width:100px}
@@ -18,7 +18,7 @@ h1{font-size:29px;letter-spacing:2px;margin:0 0 5px}h1 span{color:#f4b844}.muted
 button{border:0;border-radius:12px;padding:13px 18px;background:#f4b844;color:#17202b;font-weight:850;font-size:15px;cursor:pointer}
 #start{width:100%;margin-top:13px}
 #touch{position:fixed;bottom:20px;left:14px;right:14px;display:none;justify-content:space-between;pointer-events:none}
-.pad{display:flex;gap:9px}.touchbtn{pointer-events:auto;width:58px;height:56px;border-radius:15px;background:#172638c9;border:1px solid #ffffff55;color:white;font-size:21px;touch-action:none;user-select:none}
+.pad{display:flex;gap:9px;touch-action:none}.touchbtn{pointer-events:auto;width:58px;height:56px;border-radius:15px;background:#172638c9;border:1px solid #ffffff55;color:white;font-size:21px;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none; -webkit-appearance:none;appearance:none}
 .touchbtn.wide{width:68px}.touchbtn:active{background:#40546b}
 @media(max-width:700px){#touch{display:flex}#help{bottom:91px;right:12px;font-size:10px}#brand{bottom:9px}#hud{top:9px;left:9px;right:9px}.card{min-width:0;padding:7px 10px}.value{font-size:17px}}
 </style>
@@ -152,11 +152,17 @@ const speedEl=document.getElementById('speed'),distanceEl=document.getElementByI
 function keyName(e){return ({ArrowUp:'gas',KeyW:'gas',ArrowDown:'brake',KeyS:'brake',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'handbrake'})[e.code]}
 addEventListener('keydown',e=>{const k=keyName(e);if(k){keys[k]=true;e.preventDefault()}});
 addEventListener('keyup',e=>{const k=keyName(e);if(k){keys[k]=false;e.preventDefault()}});
+// iPhone/iPad touch controls: suppress text selection and keep a held button active.
+document.addEventListener('contextmenu',e=>{if(e.target.closest('[data-key]'))e.preventDefault()});
+document.addEventListener('selectstart',e=>{if(e.target.closest('#touch'))e.preventDefault()});
 document.querySelectorAll('[data-key]').forEach(b=>{
  const k=b.dataset.key;
- const on=e=>{e.preventDefault();keys[k]=true};const off=e=>{e.preventDefault();keys[k]=false};
- b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('pointerleave',off);
+ const on=e=>{e.preventDefault();if(b.setPointerCapture&&e.pointerId!==undefined){try{b.setPointerCapture(e.pointerId)}catch(_){}}keys[k]=true};
+ const off=e=>{if(e)e.preventDefault();keys[k]=false};
+ b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',off);
+ b.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});
 });
+addEventListener('blur',()=>{for(const k of ['gas','brake','left','right','handbrake'])keys[k]=false});
 document.getElementById('start').addEventListener('click',()=>{started=true;document.getElementById('intro').style.display='none';});
 const clock=new THREE.Clock();
 const forward=new THREE.Vector3(),desiredCam=new THREE.Vector3(),lookAt=new THREE.Vector3();
