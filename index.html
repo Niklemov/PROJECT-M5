@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>PROJECT M5 v0.6.2 — MODEL DIAGNOSTICS</title>
+<title>PROJECT M5 v0.6.3 — MODEL DIAGNOSTICS</title>
 <style>
 :root{color-scheme:dark}*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101722;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f5f7fa;overscroll-behavior:none;touch-action:none}
 #game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
@@ -203,11 +203,11 @@ function prepareCarModel(gltf){
   console.log('BMW M5 F90 model loaded',size);
 }
 
-const MODEL_URL='https://github.com/Niklemov/PROJECT-M5/releases/download/v0.6/bmw_m5_f90.glb';
+const MODEL_URL='./bmw_m5_f90.glb';
 (async()=>{
   try{
     document.getElementById('gear').textContent='LOADING';
-    showModelDiagnostic('ЗАГРУЗКА BMW M5 F90','Шаг 1/2: запрашиваю файл модели из GitHub Release…');
+    showModelDiagnostic('ЗАГРУЗКА BMW M5 F90','Шаг 1/2: запрашиваю файл модели с GitHub Pages…');
     const response=await fetch(MODEL_URL,{mode:'cors',cache:'no-store'});
     if(!response.ok){
       throw new Error('HTTP '+response.status+' '+response.statusText+'\nАдрес: '+MODEL_URL);
@@ -243,7 +243,7 @@ const MODEL_URL='https://github.com/Niklemov/PROJECT-M5/releases/download/v0.6/b
     const details=[
       'Тип ошибки: '+(error&&error.name||'Error'),
       'Сообщение: '+(error&&error.message||String(error)),
-      'Проверь подключение к интернету и доступ к GitHub Release.',
+      'Проверь, что bmw_m5_f90.glb загружен в корень репозитория рядом с index.html.',
       'Адрес: '+MODEL_URL
     ].join('\n');
     showModelDiagnostic('НЕ УДАЛОСЬ ПОЛУЧИТЬ ФАЙЛ МОДЕЛИ',details);
